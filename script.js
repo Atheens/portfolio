@@ -1,416 +1,381 @@
-// Typing Effect
-const typedTextSpan = document.querySelector(".typed-text");
-const cursorSpan = document.querySelector(".cursor");
+/* =============================================
+   PREMIUM PORTFOLIO SCRIPTS — ATHEEN SUAAD
+   ============================================= */
 
-const textArray = ["Web Developer", "UI/UX Designer", "Full-Stack Developer", "Creative Thinker"];
-const typingDelay = 100;
-const erasingDelay = 50;
+'use strict';
+
+/* ─── Loading Screen ─── */
+document.documentElement.classList.add('loading');
+document.body.classList.add('loading');
+
+(function initLoader() {
+    const loader = document.getElementById('loader');
+    if (!loader) return;
+
+    // Minimum display time so the animation completes gracefully
+    const MIN_DURATION = 2000; // ms
+    const startTime = performance.now();
+
+    function hideLoader() {
+        const elapsed = performance.now() - startTime;
+        const remaining = Math.max(MIN_DURATION - elapsed, 0);
+
+        setTimeout(() => {
+            loader.classList.add('hidden');
+            document.body.classList.remove('loading');
+            document.documentElement.classList.remove('loading');
+
+            // Remove from DOM after transition ends to free memory
+            loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+        }, remaining);
+    }
+
+    if (document.readyState === 'complete') {
+        hideLoader();
+    } else {
+        window.addEventListener('load', hideLoader, { once: true });
+    }
+})();
+
+/* ─── Typing Effect ─── */
+const typedTextSpan = document.querySelector('.typed-text');
+const cursorSpan    = document.querySelector('.cursor');
+
+const textArray   = ['Web Developer', 'UI/UX Designer', 'Full-Stack Developer', 'Creative Thinker'];
+const typingDelay = 95;
+const erasingDelay = 45;
 const newTextDelay = 2000;
 let textArrayIndex = 0;
-let charIndex = 0;
+let charIndex      = 0;
 
 function type() {
     if (charIndex < textArray[textArrayIndex].length) {
-        if (!cursorSpan.classList.contains("typing")) cursorSpan.classList.add("typing");
+        if (!cursorSpan.classList.contains('typing')) cursorSpan.classList.add('typing');
         typedTextSpan.textContent += textArray[textArrayIndex].charAt(charIndex);
         charIndex++;
         setTimeout(type, typingDelay);
     } else {
-        cursorSpan.classList.remove("typing");
+        cursorSpan.classList.remove('typing');
         setTimeout(erase, newTextDelay);
     }
 }
 
 function erase() {
     if (charIndex > 0) {
-        if (!cursorSpan.classList.contains("typing")) cursorSpan.classList.add("typing");
+        if (!cursorSpan.classList.contains('typing')) cursorSpan.classList.add('typing');
         typedTextSpan.textContent = textArray[textArrayIndex].substring(0, charIndex - 1);
         charIndex--;
         setTimeout(erase, erasingDelay);
     } else {
-        cursorSpan.classList.remove("typing");
-        textArrayIndex++;
-        if (textArrayIndex >= textArray.length) textArrayIndex = 0;
-        setTimeout(type, typingDelay + 1100);
+        cursorSpan.classList.remove('typing');
+        textArrayIndex = (textArrayIndex + 1) % textArray.length;
+        setTimeout(type, typingDelay + 1000);
     }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', () => {
     if (textArray.length) setTimeout(type, newTextDelay + 250);
 });
 
-// Navbar Scroll Effect
-const navbar = document.querySelector('.navbar');
+/* ─── Navbar Scroll Effect ─── */
+const navbar   = document.querySelector('.navbar');
 const navLinks = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('section');
 
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
+let lastScrollY = 0;
+let ticking     = false;
+
+function onScroll() {
+    if (!ticking) {
+        requestAnimationFrame(updateNavbar);
+        ticking = true;
     }
+}
 
-    // Update active link based on scroll position
+function updateNavbar() {
+    const scrollY = window.scrollY;
+
+    // Toggle scrolled state
+    navbar.classList.toggle('scrolled', scrollY > 60);
+
+    // Active link tracking
     let current = '';
-    const sections = document.querySelectorAll('section');
-    
     sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
-        if (window.scrollY >= sectionTop - 200) {
-            current = section.getAttribute('id');
+        if (scrollY >= section.offsetTop - 250) {
+            current = section.getAttribute('id') || '';
         }
     });
 
     navLinks.forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('href').slice(1) === current) {
+        if (link.getAttribute('href') === `#${current}`) {
             link.classList.add('active');
         }
     });
-});
 
-// Mobile Menu Toggle
+    lastScrollY = scrollY;
+    ticking = false;
+}
+
+window.addEventListener('scroll', onScroll, { passive: true });
+
+/* ─── Mobile Menu ─── */
 const hamburger = document.querySelector('.hamburger');
-const navMenu = document.querySelector('.nav-menu');
+const navMenu   = document.querySelector('.nav-menu');
 
-hamburger.addEventListener('click', () => {
+hamburger?.addEventListener('click', () => {
     hamburger.classList.toggle('active');
     navMenu.classList.toggle('active');
+    document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
 });
 
-// Close mobile menu when clicking on a link
 navLinks.forEach(link => {
     link.addEventListener('click', () => {
         hamburger.classList.remove('active');
         navMenu.classList.remove('active');
+        document.body.style.overflow = '';
     });
 });
 
-// Smooth Scroll
+/* ─── Smooth Scroll ─── */
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 });
 
-// Intersection Observer for Animations
-const observerOptions = {
-    threshold: 0.2,
-    rootMargin: '0px 0px -100px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
+/* ─── Intersection Observer — Scroll Reveal ─── */
+const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('animate');
-            
-            // Trigger skill bar animations
+
+            // Trigger skill bars
             if (entry.target.classList.contains('skill-category')) {
-                animateSkillBars(entry.target);
+                requestAnimationFrame(() => animateSkillBars(entry.target));
             }
         }
     });
-}, observerOptions);
+}, {
+    threshold: 0.12,
+    rootMargin: '0px 0px -60px 0px'
+});
 
-// Observe elements
-const animateElements = document.querySelectorAll('.skill-category, .project-card, .stat-item');
-animateElements.forEach(el => observer.observe(el));
+document.querySelectorAll('.skill-category, .project-card, .stat-item, .contact-action-card').forEach(el => {
+    revealObserver.observe(el);
+});
 
-// Skill Bars Animation
+/* ─── Skill Bar Animation ─── */
 function animateSkillBars(skillCategory) {
-    const progressBars = skillCategory.querySelectorAll('.progress-fill');
-    progressBars.forEach(bar => {
+    skillCategory.querySelectorAll('.progress-fill').forEach(bar => {
         const progress = bar.getAttribute('data-progress');
         setTimeout(() => {
-            bar.style.width = progress + '%';
-        }, 200);
+            bar.style.width = `${progress}%`;
+        }, 150);
     });
 }
 
-// Contact Form Handling
-const contactForm = document.getElementById('contactForm');
-
-contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Get form data
-    const formData = new FormData(contactForm);
-    
-    // Show success message (you can replace this with actual form submission)
-    showNotification('Message sent successfully! I\'ll get back to you soon.', 'success');
-    
-    // Reset form
-    contactForm.reset();
-});
-
-// Notification Function
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: ${type === 'success' ? '#10b981' : '#ef4444'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-        font-family: 'Poppins', sans-serif;
-        font-weight: 500;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 3000);
+/* ─── Counter Animation for Stats ─── */
+function animateCounter(el, target, duration = 1800) {
+    let start = null;
+    function step(timestamp) {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.floor(eased * target) + '+';
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
 }
 
-// Add notification animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// Parallax Effect for Hero Section
-window.addEventListener('scroll', () => {
-    const scrolled = window.pageYOffset;
-    const heroImage = document.querySelector('.hero-image');
-    const heroText = document.querySelector('.hero-text');
-    
-    if (heroImage && heroText) {
-        heroImage.style.transform = `translateY(${scrolled * 0.3}px)`;
-        heroText.style.transform = `translateY(${scrolled * 0.1}px)`;
-    }
-});
-
-// Cursor Trail Effect (Optional - can be removed if too heavy)
-const coords = { x: 0, y: 0 };
-const circles = document.querySelectorAll(".circle");
-
-if (window.innerWidth > 768) {
-    // Create cursor trail circles
-    for (let i = 0; i < 20; i++) {
-        const circle = document.createElement('div');
-        circle.className = 'cursor-circle';
-        circle.style.cssText = `
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #ec4899);
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.3s;
-        `;
-        document.body.appendChild(circle);
-    }
-
-    const cursorCircles = document.querySelectorAll(".cursor-circle");
-
-    cursorCircles.forEach(function (circle, index) {
-        circle.x = 0;
-        circle.y = 0;
-    });
-
-    window.addEventListener("mousemove", function (e) {
-        coords.x = e.clientX;
-        coords.y = e.clientY;
-    });
-
-    function animateCircles() {
-        let x = coords.x;
-        let y = coords.y;
-
-        cursorCircles.forEach(function (circle, index) {
-            circle.style.left = x - 5 + "px";
-            circle.style.top = y - 5 + "px";
-            circle.style.transform = `scale(${(cursorCircles.length - index) / cursorCircles.length})`;
-            circle.style.opacity = (cursorCircles.length - index) / cursorCircles.length * 0.5;
-
-            circle.x = x;
-            circle.y = y;
-
-            const nextCircle = cursorCircles[index + 1] || cursorCircles[0];
-            x += (nextCircle.x - x) * 0.3;
-            y += (nextCircle.y - y) * 0.3;
-        });
-
-        requestAnimationFrame(animateCircles);
-    }
-
-    animateCircles();
-}
-
-// Counter Animation for Stats
-function animateCounter(element, target, duration) {
-    let current = 0;
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-            element.textContent = target + '+';
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current) + '+';
-        }
-    }, 16);
-}
-
-// Observe stats for counter animation
 const statsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            const statItems = entry.target.querySelectorAll('.stat-item h4');
-            statItems.forEach(item => {
-                const text = item.textContent;
-                const number = parseInt(text);
-                if (number) {
+            entry.target.querySelectorAll('.stat-item h4').forEach(item => {
+                const num = parseInt(item.textContent);
+                if (num) {
                     item.textContent = '0+';
-                    animateCounter(item, number, 2000);
+                    setTimeout(() => animateCounter(item, num), 200);
                 }
             });
             statsObserver.unobserve(entry.target);
         }
     });
-}, { threshold: 0.5 });
+}, { threshold: 0.4 });
 
 const statsGrid = document.querySelector('.stats-grid');
-if (statsGrid) {
-    statsObserver.observe(statsGrid);
-}
+if (statsGrid) statsObserver.observe(statsGrid);
 
-// Project Card Tilt Effect
-const projectCards = document.querySelectorAll('.project-card');
-
-projectCards.forEach(card => {
-    card.addEventListener('mouseenter', function(e) {
-        this.style.transition = 'none';
+/* ─── 3D Tilt on Project Cards ─── */
+document.querySelectorAll('.project-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+        const rect      = card.getBoundingClientRect();
+        const x         = e.clientX - rect.left;
+        const y         = e.clientY - rect.top;
+        const centerX   = rect.width  / 2;
+        const centerY   = rect.height / 2;
+        const rotateX   = ((y - centerY) / centerY) * -6;
+        const rotateY   = ((x - centerX) / centerX) *  6;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale(1.02)`;
     });
 
-    card.addEventListener('mousemove', function(e) {
-        const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        const rotateX = (y - centerY) / 10;
-        const rotateY = (centerX - x) / 10;
-        
-        this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+        card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
     });
 
-    card.addEventListener('mouseleave', function() {
-        this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+    card.addEventListener('mouseenter', () => {
+        card.style.transition = 'transform 0.1s linear, box-shadow 0.35s, border-color 0.35s';
     });
 });
 
-// Lazy Loading Images
-if ('IntersectionObserver' in window) {
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src || img.src;
-                img.classList.add('loaded');
-                observer.unobserve(img);
-            }
-        });
+/* ─── Magnetic Buttons ─── */
+document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+        const rect  = btn.getBoundingClientRect();
+        const x     = e.clientX - rect.left - rect.width  / 2;
+        const y     = e.clientY - rect.top  - rect.height / 2;
+        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.25}px) scale(1.04)`;
     });
 
-    const images = document.querySelectorAll('img[data-src]');
-    images.forEach(img => imageObserver.observe(img));
-}
+    btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+        btn.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    });
 
-// Add scroll reveal animations
-window.addEventListener('scroll', () => {
-    const reveals = document.querySelectorAll('.reveal');
-    
-    reveals.forEach(element => {
-        const windowHeight = window.innerHeight;
-        const elementTop = element.getBoundingClientRect().top;
-        const elementVisible = 150;
-        
-        if (elementTop < windowHeight - elementVisible) {
-            element.classList.add('active');
+    btn.addEventListener('mouseenter', () => {
+        btn.style.transition = 'transform 0.1s linear, box-shadow 0.3s';
+    });
+});
+
+/* ─── Custom Cursor (Desktop Only) ─── */
+if (window.innerWidth > 768 && !window.matchMedia('(pointer: coarse)').matches) {
+    const cursorDot  = document.createElement('div');
+    const cursorRing = document.createElement('div');
+
+    cursorDot.className  = 'c-dot';
+    cursorRing.className = 'c-ring';
+
+    const cursorCSS = `
+        .c-dot {
+            position: fixed; pointer-events: none; z-index: 99999;
+            width: 6px; height: 6px; border-radius: 50%;
+            background: hsl(330, 84%, 70%);
+            transform: translate(-50%, -50%);
+            transition: opacity 0.2s;
+            mix-blend-mode: difference;
         }
-    });
-});
+        .c-ring {
+            position: fixed; pointer-events: none; z-index: 99998;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1.5px solid rgba(99,102,241,0.7);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+            mix-blend-mode: difference;
+        }
+        a:hover ~ .c-ring,
+        button:hover ~ .c-ring { width: 50px; height: 50px; border-color: rgba(236,72,153,0.8); }
+    `;
 
-// Easter Egg - Konami Code
-let konamiCode = [];
-const konamiPattern = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    const styleEl = document.createElement('style');
+    styleEl.textContent = cursorCSS;
+    document.head.appendChild(styleEl);
+    document.body.appendChild(cursorDot);
+    document.body.appendChild(cursorRing);
+
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    window.addEventListener('mousemove', (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+        cursorDot.style.left = mx + 'px';
+        cursorDot.style.top  = my + 'px';
+    });
+
+    (function animateRing() {
+        rx += (mx - rx) * 0.14;
+        ry += (my - ry) * 0.14;
+        cursorRing.style.left = rx + 'px';
+        cursorRing.style.top  = ry + 'px';
+        requestAnimationFrame(animateRing);
+    })();
+
+    // Hide default cursor
+    document.body.style.cursor = 'none';
+    document.querySelectorAll('a, button, .btn, .social-icon, .project-link, .hamburger').forEach(el => {
+        el.style.cursor = 'none';
+    });
+}
+
+/* ─── Notification Toast ─── */
+function showNotification(message, type = 'success') {
+    const existing = document.querySelector('.notif-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'notif-toast';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+
+    const toastStyle = `
+        position: fixed; top: 90px; right: 20px;
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        background: rgba(8,6,18,0.9);
+        border: 1px solid ${type === 'success' ? 'rgba(99,102,241,0.5)' : 'rgba(236,72,153,0.5)'};
+        backdrop-filter: blur(20px);
+        color: white; border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        font-family: 'Inter', sans-serif; font-weight: 500;
+        z-index: 10000; font-size: 0.95rem;
+        animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    `;
+    toast.style.cssText = toastStyle;
+
+    const animCSS = `
+        @keyframes toastIn {
+            from { transform: translateX(120px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes toastOut {
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(120px); opacity: 0; }
+        }
+    `;
+    if (!document.getElementById('toast-styles')) {
+        const s = document.createElement('style');
+        s.id = 'toast-styles';
+        s.textContent = animCSS;
+        document.head.appendChild(s);
+    }
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.35s ease-in forwards';
+        setTimeout(() => toast.remove(), 350);
+    }, 3500);
+}
+
+/* ─── Easter Egg ─── */
+let konamiInput = [];
+const konamiPattern = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
 
 document.addEventListener('keydown', (e) => {
-    konamiCode.push(e.key);
-    konamiCode.splice(-konamiPattern.length - 1, konamiCode.length - konamiPattern.length);
-    
-    if (konamiCode.join('').includes(konamiPattern.join(''))) {
+    konamiInput.push(e.key);
+    konamiInput = konamiInput.slice(-konamiPattern.length);
+    if (konamiInput.join(',') === konamiPattern.join(',')) {
         showNotification('🎮 Konami Code Activated! You found the secret!', 'success');
-        document.body.style.animation = 'rainbow 2s linear infinite';
-        setTimeout(() => {
-            document.body.style.animation = '';
-        }, 3000);
     }
 });
 
-// Rainbow animation for easter egg
-const rainbowStyle = document.createElement('style');
-rainbowStyle.textContent = `
-    @keyframes rainbow {
-        0% { filter: hue-rotate(0deg); }
-        100% { filter: hue-rotate(360deg); }
-    }
-`;
-document.head.appendChild(rainbowStyle);
-
-console.log('%c👋 Hello Developer!', 'font-size: 20px; color: #6366f1; font-weight: bold;');
-console.log('%cLooking at the code? I like your style! 😎', 'font-size: 14px; color: #ec4899;');
-console.log('%cFeel free to reach out if you want to collaborate!', 'font-size: 12px; color: #8b5cf6;');
+/* ─── Console Branding ─── */
+console.log('%c⚡ Atheen Suaad', 'font-size:22px;font-weight:900;background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;color:transparent;padding:4px 0');
+console.log('%cLooking at the source? Welcome, developer! 😎', 'font-size:13px;color:#8b5cf6;font-family:Inter,sans-serif');
+console.log('%c  github.com/Atheens', 'font-size:12px;color:#6b7280;font-style:italic');
